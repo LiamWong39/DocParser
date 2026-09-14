@@ -1,0 +1,52 @@
+# docx-normalizer default configuration.
+# Copy this file (docx-normalize --print-config > my.toml), change what you need,
+# and pass it with --config my.toml. Keys you leave out keep these defaults.
+
+[cleanup]
+unwrap_text_boxes = true        # move text out of text boxes / shapes (PDF converters love these)
+remove_frames = true            # drop w:framePr (absolutely positioned paragraphs)
+unfloat_tables = true           # make floating tables inline so page breaks apply to them
+merge_runs = true               # merge adjacent runs with identical formatting
+remove_manual_page_breaks = true  # removed, then re-added consistently by the page-break step
+max_consecutive_empty = 1       # keep at most N empty paragraphs in a row (-1 = don't touch)
+join_split_paragraphs = false   # join "ends without punctuation" + "starts lowercase" lines (risky)
+
+[headings]
+# Numbered headings: "4", "4.2", "4.2.1 Title". Level = number of numeric parts.
+# Must define the named groups `num` and `title`.
+heading_regex = '^(?P<num>\d{1,3}(?:\.\d{1,3}){0,5})\.?\)?\s+(?P<title>\S.*)$'
+max_section_number = 99         # "2024 Annual report" is not section 2024
+max_words = 15                  # longer lines are body text / list items, not headings
+size_delta = 1.5                # pt above body text size to count as "bigger"
+sentence_end_chars = ".,;"      # headings don't end with these
+accept_bold_only_unnumbered = false  # bold, same size, no number -> heading? (usually too noisy)
+use_auto_numbering = true       # Word list numbering (w:numPr, decimal) counts as "numbered"
+fix_existing_levels = true      # "4.2 X" styled Heading 1 -> Heading 2
+unnumbered_level_strategy = "size_rank"   # "size_rank" or "previous_plus_one"
+max_level = 9
+skip_before_toc = true          # cover page lines before the TOC are never headings
+toc_fuzzy_ratio = 0.9           # similarity to a hand-typed TOC entry that counts as a match
+strip_run_formatting = ["sz", "szCs", "b", "bCs", "rFonts", "color", "caps"]
+strip_paragraph_formatting = ["ind", "spacing", "framePr"]
+ignore_styles = ["Title", "Subtitle", "Caption", "TOCHeading"]
+
+[toc]
+enabled = true
+title = "Table of Contents"
+levels = "1-3"
+title_regex = '^\s*(table of contents|contents)\s*$'
+# A hand-typed TOC line: optional number, title, dot leaders / tab / spaces, page number.
+entry_regex = '^\s*(?P<num>\d{1,3}(?:\.\d{1,3})*\.?)?\s*(?P<title>.*?\S)\s*(?:\.{2,}|…+|\t+|\s{3,}|(?:\s?\.\s?){3,})\s*(?P<page>\d{1,4}|[ivxlcdm]{1,6})\s*$'
+insert_if_missing = true        # no TOC found -> insert one before the first section
+refresh_with_libreoffice = true # fill in the TOC so it isn't empty until someone updates fields
+uno_python = "/usr/bin/python3" # a Python that can `import uno` (system python on most Linux)
+soffice = "soffice"
+refresh_timeout = 180
+
+[page_breaks]
+section_break_level = 1         # headings at this level or above start a new page (0 = off)
+table_page_break = true
+table_min_rows = 1              # only tables with at least this many rows get a page break
+table_leadin_max = 2            # heading/caption/"...:" lines kept together with the table
+caption_regex = '^\s*(table|tbl\.?|figure|fig\.?|exhibit|chart|schedule)\s*[\dA-Z]+[\.:\s-]'
+repeat_table_header_row = true  # repeat the first row when a big table flows onto the next page
